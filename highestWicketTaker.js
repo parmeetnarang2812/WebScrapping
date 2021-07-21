@@ -1,29 +1,64 @@
 //this will fetch the highest wicket taker of the given match.
-const request = require('request');
-const cheerio = require('cheerio');
 const url = "https://www.espncricinfo.com/series/ipl-2020-21-1210595/chennai-super-kings-vs-kings-xi-punjab-53rd-match-1216506/full-scorecard";
+const request = require("request");
+const cheerio = require("cheerio");
 console.log("Before");
-request(url,cb);
+request(url, cb);
 function cb(err, response, html) {
-    if(err) {
+    if (err) {
         console.log(err);
     } else {
-        // console.log(html);
-        extractHtml(html);
+        extractHTML(html);
     }
 }
-
-function extractHtml(html) {
+function extractHTML(html) {
     let $ = cheerio.load(html);
+    // full page search
     let teamsArr = $(".match-info.match-info-MATCH .team");
-    let teamName;
-    for(let i=0; i<teamsArr.length; i++) {
-        let hasClass = $(teamsArr[i]).hasClass("team-gray");
-        if(hasClass == false) {
-            //find
+    let wTeamName;
+    for (let i = 0; i < teamsArr.length; i++) {
+        let hasclass = $(teamsArr[i]).hasClass("team-gray");
+        if (hasclass == false) {
+            // find 
             let teamNameElem = $(teamsArr[i]).find(".name");
-            console.log("👑==>" +teamNameElem.text());
+            wTeamName = teamNameElem.text().trim();
         }
     }
-} 
+    // segregate 
+    // shorter form html
+    let innigsArr = $(".card.content-block.match-scorecard-table>.Collapsible");
+    // let htmlStr = "";
+    for (let i = 0; i < innigsArr.length; i++) {
+        // let cHtml = $(innigsArr[i]).html();
+        // htmlStr += cHtml;
+            // team names
+        let teamNameElem = $(innigsArr[i]).find(".header-title.label");
+        let teamName = teamNameElem.text();
+        teamName = teamName.split("INNINGS")[0];
+        teamName = teamName.trim();
+            // team table
+        // console.log(teamName);
+        let hwtName = "";
+        let hwt = 0;
+        if (wTeamName == teamName) {
+            // console.log(teamName);
+            let tableElem = $(innigsArr[i]).find(".table.bowler");
+            let allBowlers = $(tableElem).find("tr");
+            for (let j = 0; j < allBowlers.length; j++) {
+                let allColsOfPlayer = $(allBowlers[j]).find("td");
+                let playerName = $(allColsOfPlayer[0]).text();
+                let wickets = $(allColsOfPlayer[4]).text();
+                if (wickets >= hwt) {
+                    hwt = wickets;
+                    hwtName = playerName;
+                }
+            }
+            console.log(`
+                        Winning Team==> ${wTeamName}
+                        Highest Wicket Taker playerName==> ${hwtName} 
+                        Highest Wickets==> ${hwt}`)
+        }
+    }
+    // console.log(htmlStr);
+}
 console.log("After");
